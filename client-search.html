@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客户保单查询</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0ede8;
+    --surface: #faf9f7;
+    --surface2: #ffffff;
+    --border: #e2ddd6;
+    --text: #1a1714;
+    --text2: #6b6460;
+    --accent: #c17f3a;
+    --accent-bg: #fdf3e7;
+    --green: #2d7a4f;
+    --green-bg: #edf7f1;
+    --red: #c0392b;
+    --red-bg: #fdf0ef;
+    --yellow: #b8860b;
+    --yellow-bg: #fdfaed;
+    --blue: #2563a8;
+    --blue-bg: #edf3fc;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    background: var(--surface2);
+    border-bottom: 1.5px solid var(--border);
+    padding: 18px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .header-title h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .header-title p {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 1px;
+  }
+
+  .upload-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .upload-btn {
+    flex: 1;
+    background: var(--accent-bg);
+    border: 1.5px dashed var(--accent);
+    color: var(--accent);
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .upload-btn:hover { background: #fde8cc; }
+  .upload-btn.loaded {
+    background: var(--green-bg);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  #fileInput { display: none; }
+
+  .search-box {
+    position: relative;
+    margin-top: 10px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 13px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text2);
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  #searchInput {
+    width: 100%;
+    padding: 12px 14px 12px 40px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  #searchInput:focus { border-color: var(--accent); }
+  #searchInput::placeholder { color: #b0a89e; }
+
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+
+  .filter-chip {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .filter-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  main { padding: 14px 16px 80px; }
+
+  .stats-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .stats-bar::-webkit-scrollbar { display: none; }
+
+  .stat-card {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 80px;
+  }
+  .stat-num { font-size: 20px; font-weight: 600; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  .section-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin: 16px 0 8px;
+  }
+
+  .client-group {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .client-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .client-avatar {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: var(--accent-bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .client-info { flex: 1; min-width: 0; }
+
+  .client-name {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    margin-bottom: 4px;
+  }
+
+  .client-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .meta-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+    background: var(--bg);
+    color: var(--text2);
+  }
+
+  .meta-tag.account {
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
+
+  .policy-count {
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  .count-num {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .count-label { font-size: 10px; color: var(--text2); }
+
+  .expand-icon {
+    color: var(--text2);
+    font-size: 14px;
+    margin-top: 2px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .expanded .expand-icon { transform: rotate(180deg); }
+
+  .policies-list {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+  .policies-list.open { display: block; }
+
+  .policy-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .policy-item:last-child { border-bottom: none; }
+
+  .policy-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .policy-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+    letter-spacing: 0.2px;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .status-inforce { background: var(--green-bg); color: var(--green); }
+  .status-lapsed { background: var(--red-bg); color: var(--red); }
+  .status-terminated { background: #f0f0f0; color: #666; }
+  .status-waiting { background: var(--yellow-bg); color: var(--yellow); }
+  .status-other { background: var(--bg); color: var(--text2); }
+
+  .policy-row2 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .policy-detail {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .policy-insured {
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .policy-insured span { color: var(--text2); font-weight: 400; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text2);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .empty-desc { font-size: 13px; line-height: 1.6; }
+
+  .no-result {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text2);
+  }
+  .no-result-icon { font-size: 36px; margin-bottom: 10px; }
+
+  .highlight {
+    background: #fff3c4;
+    border-radius: 3px;
+    padding: 0 1px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1a1714;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: transform 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .result-count {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+  .result-count strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">📋</div>
+    <div class="header-title">
+      <h1>客户保单查询</h1>
+      <p>输入名字即可查找所有账户</p>
+    </div>
+  </div>
+
+  <div class="upload-row">
+    <button class="upload-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+      📂 上传最新 Excel 文件
+    </button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this)">
+  </div>
+
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="输入客户名字或保单号码…" oninput="doSearch()" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+
+  <div class="filter-row">
+    <button class="filter-chip active" onclick="setFilter('all', this)">全部</button>
+    <button class="filter-chip" onclick="setFilter('Inforce', this)">有效保单</button>
+    <button class="filter-chip" onclick="setFilter('Lapsed', this)">失效</button>
+    <button class="filter-chip" onclick="setFilter('Terminated', this)">终止</button>
+    <button class="filter-chip" onclick="setFilter('waiting', this)">待处理</button>
+  </div>
+</header>
+
+<main id="main">
+  <div class="empty-state">
+    <div class="empty-icon">📊</div>
+    <div class="empty-title">上传你的 Excel 开始使用</div>
+    <div class="empty-desc">点击上方按钮上传最新的<br>客户名单 Excel 文件</div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let allData = [];
+let currentFilter = 'all';
+let searchTimeout = null;
+
+const planCodes = {
+  "109": "MULTICASH LION ENDOWMENT",
+  "220": "SUPREME MULTICARE",
+  "222": "SUPREME LIVIN'CARE",
+  "231": "GREAT PROTECTLINK",
+  "231Y": "GREAT PROTECTLINK",
+  "232": "YEARLY RENEWABLE TERM",
+  "234": "MULTICASH LION ENDOWMENT 2",
+  "238": "GREAT SENIOR",
+  "242": "YEARLY RENEWABLE TERM",
+  "274": "GREAT ENHANCED LIVING CARE",
+  "281": "SMARTPROTECT ESSENTIAL 2",
+  "295": "GREAT CASH WONDER",
+  "408": "GREAT IDEAL LIVING",
+  "423": "GREAT PREMIER WEALTH",
+  "430": "SMARTPROTECT MAX",
+  "434": "GREAT GOLDEN GIFT",
+  "440": "GREAT EARLY CANCER CARE",
+  "45": "LION ENDOWMENT",
+  "457": "GREAT CHERISH 80",
+  "475": "GREAT FLEXI WEALTH",
+  "478": "GREAT EARLY TRIPLE CARE",
+  "480": "SMART LEGACY MAX",
+  "495": "MAR SMART CHILD PLAN",
+  "50": "ECONOMILIFE",
+  "501": "GREAT LOVE4U",
+  "502": "GREAT LOVE4U",
+  "503": "GREAT LOVE4U",
+  "515": "GREAT LIFE GIFT",
+  "519": "SMARTPROTECT YOU",
+  "534": "GREAT MULTI CANCER CARE",
+  "537": "SMARTPROTECT WEALTH MAX",
+  "73": "GE LIFE LIVING ASSURANCE",
+  "77": "FLEXIPLAN",
+  "93": "MULTICARE",
+  "98": "LIVIN'CARE",
+  "H209": "GREAT MEDICARE 2",
+  "H210": "GREAT MEDICARE 2",
+  "H213": "GREAT MEDIC XTRA",
+  "H223": "GREAT MEDIC SHIELD 2",
+};
+
+const planTypes = {
+  "109": "储蓄", "234": "储蓄", "45": "储蓄", "50": "人寿",
+  "220": "人寿", "222": "人寿", "73": "人寿", "77": "人寿",
+  "93": "人寿", "98": "人寿", "238": "人寿",
+  "231": "ILP", "231Y": "ILP", "281": "ILP", "423": "ILP",
+  "430": "ILP", "475": "ILP", "480": "ILP", "495": "ILP",
+  "515": "ILP", "519": "ILP", "537": "ILP",
+  "274": "重疾", "408": "重疾", "434": "重疾", "440": "重疾",
+  "457": "重疾", "478": "重疾", "534": "重疾",
+  "232": "定期", "242": "定期",
+  "295": "储蓄", "503": "储蓄", "501": "储蓄", "502": "储蓄",
+  "H209": "医药卡", "H210": "医药卡", "H213": "医药卡", "H223": "医药卡",
+};
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const btn = document.getElementById('uploadBtn');
+  btn.textContent = '⏳ 读取中…';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      allData = [];
+
+      wb.SheetNames.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        rows.forEach(row => {
+          if (!row[1] || String(row[1]).trim() === '' || String(row[1]).trim() === '保单号') return;
+          const policyNum = String(row[1]).trim();
+          if (!/^\d{6,}/.test(policyNum)) return;
+          allData.push({
+            account: sheetName,
+            policyNo: policyNum,
+            policyHolder: String(row[2] || '').trim(),
+            dob: String(row[3] || '').trim(),
+            insured: String(row[4] || '').trim(),
+            startDate: String(row[5] || '').trim(),
+            endDate: String(row[6] || '').trim(),
+            lastDate: String(row[7] || '').trim(),
+            amount: row[8] ? String(row[8]).trim() : '',
+            frequency: String(row[9] || '').trim(),
+            payMethod: String(row[10] || '').trim(),
+            plan: String(row[11] || '').trim(),
+            status: String(row[12] || '').trim(),
+          });
+        });
+      });
+
+      btn.textContent = `✅ ${file.name.replace('.xlsx','').replace('.xls','')} (${allData.length} 条记录)`;
+      btn.classList.add('loaded');
+
+      showStats();
+      showToast(`✅ 成功载入 ${allData.length} 条保单记录`);
+      document.getElementById('searchInput').focus();
+    } catch(err) {
+      btn.textContent = '❌ 读取失败，请重试';
+      btn.classList.remove('loaded');
+      showToast('❌ 读取失败，请确认是 Excel 文件');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showStats() {
+  const accounts = {};
+  const inforce = allData.filter(d => d.status.includes('Inforce')).length;
+  allData.forEach(d => {
+    if (!accounts[d.account]) accounts[d.account] = 0;
+    accounts[d.account]++;
+  });
+
+  const main = document.getElementById('main');
+  const uniqueClients = new Set(allData.map(d => d.policyHolder)).size;
+
+  let statsHtml = `<div class="stats-bar">
+    <div class="stat-card"><div class="stat-num">${allData.length}</div><div class="stat-label">总保单</div></div>
+    <div class="stat-card"><div class="stat-num">${uniqueClients}</div><div class="stat-label">客户数</div></div>
+    <div class="stat-card"><div class="stat-num">${inforce}</div><div class="stat-label">有效保单</div></div>
+    ${Object.entries(accounts).map(([k,v]) => `<div class="stat-card"><div class="stat-num">${v}</div><div class="stat-label">${k.split('(')[0].trim()}</div></div>`).join('')}
+  </div>
+  <div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-title">输入客户名字搜索</div>
+    <div class="empty-desc">支持部分名字，例如输入 "TAN" 可找到所有姓 TAN 的客户</div>
+  </div>`;
+
+  main.innerHTML = statsHtml;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  doSearch();
+}
+
+function getStatusClass(status) {
+  if (status.includes('Inforce')) return 'status-inforce';
+  if (status.includes('Lapsed')) return 'status-lapsed';
+  if (status.includes('Terminated')) return 'status-terminated';
+  if (status.includes('waiting') || status.includes('Withdrawn') || status.includes('Declined')) return 'status-waiting';
+  return 'status-other';
+}
+
+function getStatusLabel(status) {
+  if (status.includes('Inforce (Regular)')) return '有效';
+  if (status.includes('Inforce (Fully Paid)')) return '已付清';
+  if (status.includes('Inforce (Premium Waived)')) return '豁免保费';
+  if (status.includes('Lapsed')) return '失效';
+  if (status.includes('Terminated (Death)')) return '身故';
+  if (status.includes('Terminated (Surrendered)')) return '退保';
+  if (status.includes('Terminated')) return '终止';
+  if (status.includes('waiting')) return '待处理';
+  return status.substring(0, 12);
+}
+
+function highlight(text, query) {
+  if (!query) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(escaped, 'gi'), m => `<span class="highlight">${m}</span>`);
+}
+
+function getInitials(name) {
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) return parts[0][0] + parts[1][0];
+  return name.substring(0, 2);
+}
+
+function doSearch() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(_doSearch, 150);
+}
+
+function _doSearch() {
+  if (allData.length === 0) return;
+  const q = document.getElementById('searchInput').value.trim().toUpperCase();
+  const main = document.getElementById('main');
+
+  let filtered = allData;
+
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(d => d.status.toLowerCase().includes(currentFilter.toLowerCase()));
+  }
+
+  if (!q) {
+    showStats();
+    return;
+  }
+
+  filtered = filtered.filter(d =>
+    d.policyHolder.toUpperCase().includes(q) ||
+    d.insured.toUpperCase().includes(q) ||
+    d.policyNo.includes(q)
+  );
+
+  if (filtered.length === 0) {
+    main.innerHTML = `<div class="no-result"><div class="no-result-icon">🤔</div><div style="font-weight:600;margin-bottom:6px;">找不到 "${q}"</div><div style="font-size:13px;color:var(--text2)">试试用部分名字搜索<br>例如只输入姓氏</div></div>`;
+    return;
+  }
+
+  // 按保单持有人分组
+  const groups = {};
+  filtered.forEach(d => {
+    const key = d.policyHolder + '||' + d.dob;
+    if (!groups[key]) groups[key] = { name: d.policyHolder, dob: d.dob, accounts: new Set(), policies: [] };
+    groups[key].accounts.add(d.account);
+    groups[key].policies.push(d);
+  });
+
+  const groupArr = Object.values(groups).sort((a,b) => b.policies.length - a.policies.length);
+
+  let html = `<div class="result-count">找到 <strong>${groupArr.length} 位客户</strong>，共 <strong>${filtered.length} 份保单</strong></div>`;
+
+  groupArr.forEach((g, idx) => {
+    const accounts = Array.from(g.accounts);
+    const inforceCount = g.policies.filter(p => p.status.includes('Inforce')).length;
+    const initials = getInitials(g.name);
+
+    html += `<div class="client-group">
+      <div class="client-header" onclick="togglePolicies(${idx})">
+        <div class="client-avatar">${initials}</div>
+        <div class="client-info">
+          <div class="client-name">${highlight(g.name, q)}</div>
+          <div class="client-meta">
+            <span class="meta-tag">🎂 ${g.dob || '—'}</span>
+            ${accounts.map(a => `<span class="meta-tag account">📁 ${a.split('(')[0].trim()}</span>`).join('')}
+            ${inforceCount > 0 ? `<span class="meta-tag" style="background:var(--green-bg);color:var(--green)">✅ ${inforceCount} 有效</span>` : ''}
+          </div>
+        </div>
+        <div class="policy-count">
+          <div class="count-num">${g.policies.length}</div>
+          <div class="count-label">份保单</div>
+        </div>
+        <div class="expand-icon">▼</div>
+      </div>
+      <div class="policies-list" id="pl-${idx}">`;
+
+    g.policies.forEach(p => {
+      const amt = p.amount ? `RM ${parseFloat(p.amount).toLocaleString('en-MY', {minimumFractionDigits: 0, maximumFractionDigits: 2})}` : '';
+      const productName = p.plan ? (planCodes[p.plan] || '') : '';
+      const productType = p.plan ? (planTypes[p.plan] || '') : '';
+      const typeColors = {
+        'ILP': 'background:#e8f0fe;color:#2563a8',
+        '医药卡': 'background:#edf7f1;color:#2d7a4f',
+        '重疾': 'background:#fdf0ef;color:#c0392b',
+        '储蓄': 'background:#fdfaed;color:#b8860b',
+        '人寿': 'background:#fdf3e7;color:#c17f3a',
+        '定期': 'background:#f0f0f0;color:#666',
+      };
+      const typeStyle = typeColors[productType] || 'background:#f0f0f0;color:#666';
+
+      html += `<div class="policy-item">
+        <div class="policy-row1">
+          <div class="policy-num">${highlight(p.policyNo, q)}</div>
+          <div class="status-badge ${getStatusClass(p.status)}">${getStatusLabel(p.status)}</div>
+        </div>
+        ${productName ? `<div style="font-size:13px;font-weight:600;color:var(--text);margin:2px 0;">${productName} ${productType ? `<span style="font-size:10px;padding:2px 7px;border-radius:5px;${typeStyle};font-weight:600;margin-left:4px">${productType}</span>` : ''}</div>` : ''}
+        ${p.insured && p.insured !== p.policyHolder ? `<div class="policy-insured"><span>被保人：</span>${highlight(p.insured, q)}</div>` : ''}
+        <div class="policy-row2">
+          <div class="policy-detail">📁 ${p.account.split('(')[0].trim()}</div>
+          ${p.plan ? `<div class="policy-detail">📄 ${p.plan}</div>` : ''}
+          ${amt ? `<div class="policy-detail">💰 ${amt}/${p.frequency === 'Monthly' ? '月' : p.frequency === 'Yearly' ? '年' : p.frequency === 'Quarterly' ? '季' : p.frequency === 'Half-Yearly' ? '半年' : p.frequency}</div>` : ''}
+          ${p.payMethod ? `<div class="policy-detail">💳 ${p.payMethod}</div>` : ''}
+          ${p.startDate ? `<div class="policy-detail">📅 ${p.startDate}</div>` : ''}
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  main.innerHTML = html;
+}
+
+function togglePolicies(idx) {
+  const list = document.getElementById(`pl-${idx}`);
+  const header = list.previousElementSibling;
+  list.classList.toggle('open');
+  header.classList.toggle('expanded');
+}
+</script>
+</body>
+</html>
